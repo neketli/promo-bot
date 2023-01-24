@@ -1,0 +1,10 @@
+app:
+  name: "promo-bot"
+  version: "1.0.0"
+
+http:
+  host: "localhost"
+  port: "8080"
+
+telegram:
+  host: "api.telegram.org"
