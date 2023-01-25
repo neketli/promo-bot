@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"promo-bot/internal/repository"
+	"promo-bot/internal/entity"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -26,7 +26,7 @@ func New(path string) (*Repository, error) {
 }
 
 // CreateUser create new admin user
-func (s *Repository) CreateUser(ctx context.Context, user *repository.User) error {
+func (s *Repository) CreateUser(ctx context.Context, user *entity.User) error {
 	query := `INSERT INTO users (login, password, chat_id) VALUES (?,?,?)`
 
 	if _, err := s.db.ExecContext(ctx, query, user.Login, user.Password, user.ChatID); err != nil {
@@ -35,7 +35,7 @@ func (s *Repository) CreateUser(ctx context.Context, user *repository.User) erro
 	return nil
 }
 
-func (s *Repository) RemoveUser(ctx context.Context, user *repository.User) error {
+func (s *Repository) RemoveUser(ctx context.Context, user *entity.User) error {
 	query := `DELETE FROM users WHERE login = ? AND password = ? AND chat_id = ?`
 
 	if _, err := s.db.ExecContext(ctx, query, user.Login, user.Password, user.ChatID); err != nil {
@@ -44,7 +44,7 @@ func (s *Repository) RemoveUser(ctx context.Context, user *repository.User) erro
 	return nil
 }
 
-func (s *Repository) IsUserExists(ctx context.Context, user *repository.User) (bool, error) {
+func (s *Repository) IsUserExists(ctx context.Context, user *entity.User) (bool, error) {
 	query := `SELECT (login, password, chat_id) FROM users WHERE chat_id = ?`
 	err := s.db.QueryRowContext(ctx, query, user.ChatID).Scan()
 	if err == sql.ErrNoRows {
@@ -56,7 +56,7 @@ func (s *Repository) IsUserExists(ctx context.Context, user *repository.User) (b
 	return true, nil
 }
 
-func (s *Repository) CreatePost(ctx context.Context, post *repository.Post) error {
+func (s *Repository) CreatePost(ctx context.Context, post *entity.Post) error {
 	query := `INSERT INTO promocodes (trigger, description) VALUES (?,?)`
 
 	if _, err := s.db.ExecContext(ctx, query, post.Trigger, post.Description); err != nil {
@@ -65,7 +65,7 @@ func (s *Repository) CreatePost(ctx context.Context, post *repository.Post) erro
 	return nil
 }
 
-func (s *Repository) RemovePost(ctx context.Context, post *repository.Post) error {
+func (s *Repository) RemovePost(ctx context.Context, post *entity.Post) error {
 	query := `DELETE FROM promocodes WHERE id = ?`
 
 	if _, err := s.db.ExecContext(ctx, query, post.ID); err != nil {
@@ -74,23 +74,23 @@ func (s *Repository) RemovePost(ctx context.Context, post *repository.Post) erro
 	return nil
 }
 
-func (s *Repository) GetPosts(ctx context.Context) ([]repository.Post, error) {
+func (s *Repository) GetPosts(ctx context.Context) ([]entity.Post, error) {
 	query := `SELECT * FROM promocodes`
 	rows, err := s.db.QueryContext(ctx, query)
 	if err != nil {
-		return []repository.Post{}, fmt.Errorf("can't get posts: %w", err)
+		return []entity.Post{}, fmt.Errorf("can't get posts: %w", err)
 	}
 	defer rows.Close()
-	posts := make([]repository.Post, 0)
+	posts := make([]entity.Post, 0)
 
 	for rows.Next() {
 		var id int
 		var trigger string
 		var description string
 		if err := rows.Scan(&id, &trigger, &description); err != nil {
-			return []repository.Post{}, fmt.Errorf("can't get posts: %w", err)
+			return []entity.Post{}, fmt.Errorf("can't get posts: %w", err)
 		}
-		posts = append(posts, repository.Post{
+		posts = append(posts, entity.Post{
 			ID:          id,
 			Trigger:     trigger,
 			Description: description,
@@ -99,29 +99,29 @@ func (s *Repository) GetPosts(ctx context.Context) ([]repository.Post, error) {
 
 	rerr := rows.Close()
 	if rerr != nil {
-		return []repository.Post{}, fmt.Errorf("can't get posts: %w", err)
+		return []entity.Post{}, fmt.Errorf("can't get posts: %w", err)
 	}
 
 	if err := rows.Err(); err != nil {
-		return []repository.Post{}, fmt.Errorf("can't get posts: %w", err)
+		return []entity.Post{}, fmt.Errorf("can't get posts: %w", err)
 	}
 
 	return posts, nil
 }
 
-func (s *Repository) GetRandomPost(ctx context.Context) (repository.Post, error) {
+func (s *Repository) GetRandomPost(ctx context.Context) (entity.Post, error) {
 	query := `SELECT * FROM promocoders ORDER BY RAND() LIMIT 1`
 	var id int
 	var trigger string
 	var description string
 	err := s.db.QueryRowContext(ctx, query).Scan(&id, &trigger, &description)
 	if err == sql.ErrNoRows {
-		return repository.Post{}, nil
+		return entity.Post{}, nil
 	}
 	if err != nil {
-		return repository.Post{}, fmt.Errorf("can't get user: %w", err)
+		return entity.Post{}, fmt.Errorf("can't get user: %w", err)
 	}
-	return repository.Post{
+	return entity.Post{
 		ID:          id,
 		Trigger:     trigger,
 		Description: description,
