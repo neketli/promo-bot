@@ -4,9 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"promo-bot/internal/promo-bot/clients/telegram"
 	"promo-bot/internal/promo-bot/events"
-	"promo-bot/internal/promo-bot/storage"
 )
 
 type Processor struct {

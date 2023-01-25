@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"promo-bot/config"
-	calcbot "promo-bot/internal/promo-bot"
+	promobot "promo-bot/internal/promo-bot"
 )
 
 const configPath = "./config/config.yml"
@@ -14,5 +14,5 @@ func main() {
 	if err != nil {
 		log.Fatal("Can't setup config: ", err)
 	}
-	calcbot.Start(config)
+	promobot.Start(config)
 }
