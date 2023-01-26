@@ -17,27 +17,6 @@ type TgBot struct {
 	Repository *sqlite.Repository
 }
 
-var defaultKeyboard = tgbotapi.NewReplyKeyboard(
-	tgbotapi.NewKeyboardButtonRow(
-		tgbotapi.NewKeyboardButton(msgTriggerList),
-	),
-	tgbotapi.NewKeyboardButtonRow(
-		tgbotapi.NewKeyboardButton(msgTriggerCreate),
-	),
-)
-
-var cancelKeyboard = tgbotapi.NewReplyKeyboard(
-	tgbotapi.NewKeyboardButtonRow(
-		tgbotapi.NewKeyboardButton(msgCancel),
-	),
-)
-
-var editInlineKeyboard = tgbotapi.NewInlineKeyboardMarkup(
-	tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData(msgDelete, "/delete"),
-	),
-)
-
 func New(token string, repository *sqlite.Repository) (*TgBot, error) {
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
