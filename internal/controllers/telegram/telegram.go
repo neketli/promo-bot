@@ -6,6 +6,7 @@ import (
 	"log"
 	"promo-bot/internal/entity"
 	"promo-bot/internal/infrastructure/repository"
+	"promo-bot/internal/infrastructure/repository/sqlite"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -30,12 +31,12 @@ var cancelKeyboard = tgbotapi.NewReplyKeyboard(
 	),
 )
 
-func New(token string, repository *repository.Repository) (*TgBot, error) {
+func New(token string, repository *sqlite.Repository) (*TgBot, error) {
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		return &TgBot{}, fmt.Errorf("error bot api connection: %w", err)
 	}
-	// bot.Debug = true
+	bot.Debug = true
 
 	return &TgBot{Bot: bot}, nil
 }
@@ -68,10 +69,8 @@ func (b *TgBot) Start(timout int) error {
 					log.Fatal(err)
 				}
 			}
-		case "Добавить триггер":
-			b.Bot.StopReceivingUpdates()
-			b.enterPost(update)
-			updates = b.Bot.GetUpdatesChan(u)
+			// case "Добавить триггер":
+			// 	b.enterPost(update)
 		}
 	}
 	return nil
