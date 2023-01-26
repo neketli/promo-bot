@@ -18,7 +18,7 @@ type UserRepository interface {
 
 type PostRepository interface {
 	CreatePost(ctx context.Context, p *entity.Post) error
-	RemovePost(ctx context.Context, p *entity.Post) error
+	RemovePost(ctx context.Context, id int) error
 	GetPosts(ctx context.Context) ([]entity.Post, error)
 	GetRandomPost(ctx context.Context) (entity.Post, error)
 }

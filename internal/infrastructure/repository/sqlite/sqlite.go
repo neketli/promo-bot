@@ -65,10 +65,10 @@ func (s *Repository) CreatePost(ctx context.Context, post *entity.Post) error {
 	return nil
 }
 
-func (s *Repository) RemovePost(ctx context.Context, post *entity.Post) error {
+func (s *Repository) RemovePost(ctx context.Context, id int) error {
 	query := `DELETE FROM promocodes WHERE id = ?`
 
-	if _, err := s.db.ExecContext(ctx, query, post.ID); err != nil {
+	if _, err := s.db.ExecContext(ctx, query, id); err != nil {
 		return fmt.Errorf("can't remove user: %w", err)
 	}
 	return nil

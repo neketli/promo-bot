@@ -18,4 +18,7 @@ const (
 	msgTriggerCreate        = "Добавить триггер"
 	msgTriggerCreateSuccess = "Успешно добавлено!"
 	msgCancel               = "Отменить"
+	msgCanceled             = "Отменено"
+	msgDelete               = "Удалить ❌"
+	msgDeleteSuccess        = "Удаление прошло успешно"
 )

@@ -23,6 +23,9 @@ func Start(config *config.Config) {
 	if err != nil {
 		log.Fatalf("FATAL: can't create bot, %s", err.Error())
 	}
+	if err := bot.Start(config.TG.Timeout); err != nil {
+		log.Fatalf("FATAL: can't start bot, %s", err.Error())
+	}
 
 	log.Printf("Authorized on account %s", bot.Bot.Self.UserName)
 
