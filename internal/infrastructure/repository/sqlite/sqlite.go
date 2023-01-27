@@ -25,28 +25,63 @@ func New(path string) (*Repository, error) {
 	return &Repository{db: db}, nil
 }
 
-// CreateUser create new admin user
-func (s *Repository) CreateUser(ctx context.Context, user *entity.User) error {
-	query := `INSERT INTO users (login, password, chat_id) VALUES (?,?,?)`
+func (s *Repository) GetUsers(ctx context.Context) ([]entity.User, error) {
+	query := `SELECT * FROM users`
+	rows, err := s.db.QueryContext(ctx, query)
+	if err != nil {
+		return []entity.User{}, fmt.Errorf("can't get users: %w", err)
+	}
+	defer rows.Close()
+	users := make([]entity.User, 0)
 
-	if _, err := s.db.ExecContext(ctx, query, user.Login, user.Password, user.ChatID); err != nil {
+	for rows.Next() {
+		var id int
+		var user_name string
+		var chat_id int64
+		if err := rows.Scan(&id, &user_name, &chat_id); err != nil {
+			return []entity.User{}, fmt.Errorf("can't get users: %w", err)
+		}
+		users = append(users, entity.User{
+			ID:       id,
+			UserName: user_name,
+			ChatID:   chat_id,
+		})
+	}
+
+	rerr := rows.Close()
+	if rerr != nil {
+		return []entity.User{}, fmt.Errorf("can't get users: %w", err)
+	}
+
+	if err := rows.Err(); err != nil {
+		return []entity.User{}, fmt.Errorf("can't get users: %w", err)
+	}
+
+	return users, nil
+}
+
+// CreateUser create new admin user
+func (s *Repository) CreateUser(ctx context.Context, user entity.User) error {
+	query := `INSERT INTO users (user_name, chat_id) VALUES (?,?)`
+
+	if _, err := s.db.ExecContext(ctx, query, user.UserName, user.ChatID); err != nil {
 		return fmt.Errorf("can't create user: %w", err)
 	}
 	return nil
 }
 
-func (s *Repository) RemoveUser(ctx context.Context, user *entity.User) error {
-	query := `DELETE FROM users WHERE login = ? AND password = ? AND chat_id = ?`
+func (s *Repository) RemoveUser(ctx context.Context, id int) error {
+	query := `DELETE FROM users WHERE id = ?`
 
-	if _, err := s.db.ExecContext(ctx, query, user.Login, user.Password, user.ChatID); err != nil {
+	if _, err := s.db.ExecContext(ctx, query, id); err != nil {
 		return fmt.Errorf("can't remove user: %w", err)
 	}
 	return nil
 }
 
-func (s *Repository) IsUserExists(ctx context.Context, user *entity.User) (bool, error) {
-	query := `SELECT (login, password, chat_id) FROM users WHERE chat_id = ?`
-	err := s.db.QueryRowContext(ctx, query, user.ChatID).Scan()
+func (s *Repository) IsUserExists(ctx context.Context, userName string) (bool, error) {
+	query := `SELECT * FROM users WHERE user_name = ? LIMIT 1`
+	err := s.db.QueryRowContext(ctx, query, userName).Err()
 	if err == sql.ErrNoRows {
 		return false, nil
 	}
@@ -56,7 +91,7 @@ func (s *Repository) IsUserExists(ctx context.Context, user *entity.User) (bool,
 	return true, nil
 }
 
-func (s *Repository) CreatePost(ctx context.Context, post *entity.Post) error {
+func (s *Repository) CreatePost(ctx context.Context, post entity.Post) error {
 	query := `INSERT INTO promocodes (trigger, description) VALUES (?,?)`
 
 	if _, err := s.db.ExecContext(ctx, query, post.Trigger, post.Description); err != nil {

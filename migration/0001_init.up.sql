@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS promocodes (
 
 CREATE TABLE IF NOT EXISTS users (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			login TEXT,
-			password TEXT,
+			user_name TEXT,
 			chat_id INTEGER
 		)

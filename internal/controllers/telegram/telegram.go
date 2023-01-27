@@ -35,21 +35,23 @@ func (b *TgBot) Start(timout int) error {
 
 	for update := range updates {
 		if update.Message != nil {
-
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-			msg.ReplyToMessageID = update.Message.MessageID
-
-			switch update.Message.Text {
-			case "/start":
-				msg.ReplyMarkup = defaultKeyboard
-			case "Список текущих триггеров":
-				b.getAllPosts(update)
-			case "Добавить триггер":
-				b.enterPost(update, updates)
+			isAdmin, err := b.Repository.IsUserExists(context.TODO(), update.Message.Chat.UserName)
+			if err != nil {
+				log.Print("ERROR: can't check admin: ", err)
+			}
+			if isAdmin {
+				fmt.Print("msg from ", update.Message.Chat.UserName)
+				b.adminControls(update, updates)
+			} else {
+				// pass
 			}
 		} else if update.CallbackQuery != nil {
-			b.deletePost(update)
-
+			switch update.CallbackQuery.Data {
+			case DeletePostCommand:
+				b.deletePost(update)
+			case DeleteAdminCommand:
+				b.deleteAdmin(update)
+			}
 		}
 	}
 	return nil
@@ -63,12 +65,52 @@ func (b *TgBot) SendMessage(id int64, text string) error {
 	return nil
 }
 
+func (b *TgBot) SendMessageReply(id int64, messageId int, text string) error {
+	msg := tgbotapi.NewMessage(id, text)
+	msg.ReplyToMessageID = messageId
+
+	if _, err := b.Bot.Send(msg); err != nil {
+		return fmt.Errorf("can't send message: %w", err)
+	}
+	return nil
+}
+
+func (b *TgBot) SendMessageWithKeyboard(id int64, keyboard tgbotapi.ReplyKeyboardMarkup, text string) error {
+	msg := tgbotapi.NewMessage(id, text)
+	msg.ReplyMarkup = keyboard
+
+	if _, err := b.Bot.Send(msg); err != nil {
+		return fmt.Errorf("can't send message: %w", err)
+	}
+	return nil
+}
+
 func (b *TgBot) SendError(id int64) error {
 	msg := tgbotapi.NewMessage(id, msgError)
 	if _, err := b.Bot.Send(msg); err != nil {
 		return fmt.Errorf("can't send message: %w", err)
 	}
 	return nil
+}
+
+func (b *TgBot) adminControls(update tgbotapi.Update, updates tgbotapi.UpdatesChannel) {
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "admin")
+	msg.ReplyToMessageID = update.Message.MessageID
+
+	switch update.Message.Text {
+	case StartCommand:
+		b.SendMessageWithKeyboard(update.Message.Chat.ID, adminKeyboard, msgHello)
+	case HelpCommand:
+		b.SendMessageWithKeyboard(update.Message.Chat.ID, adminKeyboard, msgHelp)
+	case msgTriggerList:
+		b.getAllPosts(update)
+	case msgTriggerCreate:
+		b.enterPost(update, updates)
+	case msgAdminList:
+		b.getAdminList(update)
+	case msgAdminCreate:
+		b.createAdmin(update, updates)
+	}
 }
 
 func (b *TgBot) enterPost(update tgbotapi.Update, updates tgbotapi.UpdatesChannel) error {
@@ -90,7 +132,7 @@ func (b *TgBot) enterPost(update tgbotapi.Update, updates tgbotapi.UpdatesChanne
 
 		if update.Message.Text == msgCancel {
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, msgCanceled)
-			msg.ReplyMarkup = defaultKeyboard
+			msg.ReplyMarkup = adminKeyboard
 			if _, err := b.Bot.Send(msg); err != nil {
 				return fmt.Errorf("can't send message: %w", err)
 			}
@@ -104,7 +146,7 @@ func (b *TgBot) enterPost(update tgbotapi.Update, updates tgbotapi.UpdatesChanne
 			b.SendMessage(update.Message.Chat.ID, msgEnterDescription)
 		case 1:
 			description = update.Message.Text
-			err := b.Repository.CreatePost(context.TODO(), &entity.Post{
+			err := b.Repository.CreatePost(context.TODO(), entity.Post{
 				Trigger:     trigger,
 				Description: description,
 			})
@@ -112,12 +154,80 @@ func (b *TgBot) enterPost(update tgbotapi.Update, updates tgbotapi.UpdatesChanne
 				return fmt.Errorf("can't add post: %w", err)
 			}
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, msgTriggerCreateSuccess)
-			msg.ReplyMarkup = defaultKeyboard
+			msg.ReplyMarkup = adminKeyboard
 			if _, err := b.Bot.Send(msg); err != nil {
 				return fmt.Errorf("can't send message: %w", err)
 			}
 			return nil
 		}
+	}
+	return nil
+}
+
+func (b *TgBot) createAdmin(update tgbotapi.Update, updates tgbotapi.UpdatesChannel) error {
+	if err := b.SendMessageWithKeyboard(update.Message.Chat.ID, cancelKeyboard, msgEnterAdminName); err != nil {
+		return fmt.Errorf("can't send message: %w", err)
+	}
+
+	for update := range updates {
+		if update.Message == nil {
+			continue
+		}
+
+		if update.Message.Text == msgCancel {
+			if err := b.SendMessageWithKeyboard(update.Message.Chat.ID, adminKeyboard, msgCanceled); err != nil {
+				return fmt.Errorf("can't send message: %w", err)
+			}
+			return nil
+		}
+
+		err := b.Repository.CreateUser(context.TODO(), entity.User{
+			UserName: strings.TrimLeft(update.Message.Text, "@"),
+		})
+		if err != nil {
+			return fmt.Errorf("can't add post: %w", err)
+		}
+
+		if err := b.SendMessageWithKeyboard(update.Message.Chat.ID, adminKeyboard, msgAdminCreateSuccess); err != nil {
+			return fmt.Errorf("can't send message: %w", err)
+		}
+		return nil
+	}
+	return nil
+}
+
+func (b *TgBot) getAdminList(update tgbotapi.Update) {
+	res, err := b.Repository.GetUsers(context.TODO())
+	if err != nil {
+		log.Print("ERROR: can't get posts: ", err)
+	}
+	for _, user := range res {
+		text := fmt.Sprintf("ID:%d %s|%d", user.ID, user.UserName, user.ChatID)
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
+		msg.ReplyMarkup = deleteAdminInlineKeyboard
+		if _, err := b.Bot.Send(msg); err != nil {
+			log.Fatal("ERROR: failed sending message: ", err)
+		}
+	}
+}
+
+func (b *TgBot) deleteAdmin(update tgbotapi.Update) error {
+	res := strings.Split(strings.Split(update.CallbackQuery.Message.Text, " ")[0], ":")[1]
+
+	userId, err := strconv.Atoi(res)
+	if err != nil {
+		return fmt.Errorf("can't get delete message: %w", err)
+	}
+	b.Repository.RemoveUser(context.TODO(), userId)
+
+	deleteMessageConfig := tgbotapi.NewDeleteMessage(update.CallbackQuery.Message.Chat.ID,
+		update.CallbackQuery.Message.MessageID)
+	deleteMessageAlertCallbacl := tgbotapi.NewCallback(update.CallbackQuery.ID, msgDeleteSuccess)
+	if _, err := b.Bot.Request(deleteMessageAlertCallbacl); err != nil {
+		log.Fatal("ERROR: failed deliting message: ", err)
+	}
+	if _, err := b.Bot.Request(deleteMessageConfig); err != nil {
+		log.Fatal("ERROR: failed deliting message: ", err)
 	}
 	return nil
 }
@@ -130,17 +240,16 @@ func (b *TgBot) getAllPosts(update tgbotapi.Update) {
 	for _, post := range res {
 		text := fmt.Sprintf("ID:%d [%s] - %s", post.ID, post.Trigger, post.Description)
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
-		msg.ReplyMarkup = editInlineKeyboard
+		msg.ReplyMarkup = deletePostInlineKeyboard
 		if _, err := b.Bot.Send(msg); err != nil {
-			log.Fatal(err)
+			log.Fatal("ERROR: failed sending message: ", err)
+
 		}
 	}
 }
 
 func (b *TgBot) deletePost(update tgbotapi.Update) error {
-	log.Printf("!!%s", update.CallbackQuery.Message.Text)
 	res := strings.Split(strings.Split(update.CallbackQuery.Message.Text, " ")[0], ":")[1]
-	log.Printf("!!%s", res)
 
 	postId, err := strconv.Atoi(res)
 	if err != nil {
@@ -152,10 +261,10 @@ func (b *TgBot) deletePost(update tgbotapi.Update) error {
 		update.CallbackQuery.Message.MessageID)
 	deleteMessageAlertCallbacl := tgbotapi.NewCallback(update.CallbackQuery.ID, msgDeleteSuccess)
 	if _, err := b.Bot.Request(deleteMessageAlertCallbacl); err != nil {
-		panic(err)
+		log.Fatal("ERROR: failed deliting message: ", err)
 	}
 	if _, err := b.Bot.Request(deleteMessageConfig); err != nil {
-		panic(err)
+		log.Fatal("ERROR: failed deliting message: ", err)
 	}
 	return nil
 }
