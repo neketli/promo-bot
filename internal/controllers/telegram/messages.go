@@ -1,11 +1,6 @@
 package telegram
 
-const msgHelp = `Working with me is very easy - just send me a simple math expression and I will quickly calculate it for you
-
-However, remember that I graduated from only 3 classes, so the list of operations I support is not large.
-
-Available operations: a + b, a - b, a * b, a / b, where a, b are integer or real numbers
-You can also view this help again using the command /help`
+const msgHelp = `пока я ничего не умею (`
 
 const msgHello = "Привет 👋, я бот с промокодами вот что я умею: \n" + msgHelp
 
@@ -25,4 +20,8 @@ const (
 	msgCanceled             = "Отменено"
 	msgDelete               = "Удалить ❌"
 	msgDeleteSuccess        = "Удаление прошло успешно"
+	msgDeleteReply          = "Вы были исключены из списка администраторов"
+
+	msgByAdmin = "администратором: %s"
+	msgByUser  = "пользователем: %s"
 )

@@ -39,19 +39,27 @@ func (b *TgBot) Start(timout int) error {
 			if err != nil {
 				log.Print("ERROR: can't check admin: ", err)
 			}
+
 			if isAdmin {
-				fmt.Print("msg from ", update.Message.Chat.UserName)
+				fmt.Print("DEBUG: message from ", update.Message.Chat.UserName)
 				b.adminControls(update, updates)
 			} else {
 				// pass
 			}
 		} else if update.CallbackQuery != nil {
-			switch update.CallbackQuery.Data {
-			case DeletePostCommand:
-				b.deletePost(update)
-			case DeleteAdminCommand:
-				b.deleteAdmin(update)
+			isAdmin, err := b.Repository.IsUserExists(context.TODO(), update.CallbackQuery.From.UserName)
+			if err != nil {
+				log.Print("ERROR: can't check admin: ", err)
 			}
+			if isAdmin {
+				switch update.CallbackQuery.Data {
+				case DeletePostCommand:
+					b.deletePost(update)
+				case DeleteAdminCommand:
+					b.deleteAdmin(update)
+				}
+			}
+
 		}
 	}
 	return nil
@@ -94,11 +102,12 @@ func (b *TgBot) SendError(id int64) error {
 }
 
 func (b *TgBot) adminControls(update tgbotapi.Update, updates tgbotapi.UpdatesChannel) {
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "admin")
-	msg.ReplyToMessageID = update.Message.MessageID
+	// msg := tgbotapi.NewMessage(update.Message.Chat.ID, "admin")
+	// msg.ReplyToMessageID = update.Message.MessageID
 
 	switch update.Message.Text {
 	case StartCommand:
+		b.initAdmin(update)
 		b.SendMessageWithKeyboard(update.Message.Chat.ID, adminKeyboard, msgHello)
 	case HelpCommand:
 		b.SendMessageWithKeyboard(update.Message.Chat.ID, adminKeyboard, msgHelp)
@@ -196,13 +205,25 @@ func (b *TgBot) createAdmin(update tgbotapi.Update, updates tgbotapi.UpdatesChan
 	return nil
 }
 
+func (b *TgBot) initAdmin(update tgbotapi.Update) error {
+	user := entity.User{
+		UserName: update.Message.Chat.UserName,
+		ChatID:   update.Message.Chat.ID,
+	}
+	if err := b.Repository.UpdateUser(context.TODO(), user); err != nil {
+		return fmt.Errorf("can't update user info: %w", err)
+	}
+	return nil
+
+}
+
 func (b *TgBot) getAdminList(update tgbotapi.Update) {
 	res, err := b.Repository.GetUsers(context.TODO())
 	if err != nil {
 		log.Print("ERROR: can't get posts: ", err)
 	}
 	for _, user := range res {
-		text := fmt.Sprintf("ID:%d %s|%d", user.ID, user.UserName, user.ChatID)
+		text := fmt.Sprintf("ID:%d | Chat:%d | %s", user.ID, user.ChatID, user.UserName)
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
 		msg.ReplyMarkup = deleteAdminInlineKeyboard
 		if _, err := b.Bot.Send(msg); err != nil {
@@ -212,9 +233,10 @@ func (b *TgBot) getAdminList(update tgbotapi.Update) {
 }
 
 func (b *TgBot) deleteAdmin(update tgbotapi.Update) error {
-	res := strings.Split(strings.Split(update.CallbackQuery.Message.Text, " ")[0], ":")[1]
+	uid := strings.Split(strings.Split(update.CallbackQuery.Message.Text, " | ")[0], ":")[1]
+	chatId := strings.Split(strings.Split(update.CallbackQuery.Message.Text, " | ")[1], ":")[1]
 
-	userId, err := strconv.Atoi(res)
+	userId, err := strconv.Atoi(uid)
 	if err != nil {
 		return fmt.Errorf("can't get delete message: %w", err)
 	}
@@ -229,6 +251,13 @@ func (b *TgBot) deleteAdmin(update tgbotapi.Update) error {
 	if _, err := b.Bot.Request(deleteMessageConfig); err != nil {
 		log.Fatal("ERROR: failed deliting message: ", err)
 	}
+
+	if chatId, err := strconv.ParseInt(chatId, 10, 64); err == nil {
+		b.sendMessageToDelited(chatId, update.CallbackQuery.From.UserName)
+	} else {
+		return fmt.Errorf("can't get delete message: %w", err)
+	}
+
 	return nil
 }
 
@@ -265,6 +294,16 @@ func (b *TgBot) deletePost(update tgbotapi.Update) error {
 	}
 	if _, err := b.Bot.Request(deleteMessageConfig); err != nil {
 		log.Fatal("ERROR: failed deliting message: ", err)
+	}
+	return nil
+}
+
+func (b *TgBot) sendMessageToDelited(chatId int64, fromUser string) error {
+	text := msgDeleteReply + " " + fmt.Sprintf(msgByAdmin, fromUser)
+	msg := tgbotapi.NewMessage(chatId, text)
+	msg.ReplyMarkup = defaultKeyboard
+	if _, err := b.Bot.Send(msg); err != nil {
+		return fmt.Errorf("failed sending message: %w", err)
 	}
 	return nil
 }

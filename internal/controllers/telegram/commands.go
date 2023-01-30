@@ -9,6 +9,12 @@ const (
 	DeleteAdminCommand = "/delete-admin"
 )
 
+var defaultKeyboard = tgbotapi.NewReplyKeyboard(
+	tgbotapi.NewKeyboardButtonRow(
+		tgbotapi.NewKeyboardButton(HelpCommand),
+	),
+)
+
 var adminKeyboard = tgbotapi.NewReplyKeyboard(
 	tgbotapi.NewKeyboardButtonRow(
 		tgbotapi.NewKeyboardButton(msgTriggerList),

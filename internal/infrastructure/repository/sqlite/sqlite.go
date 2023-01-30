@@ -70,6 +70,16 @@ func (s *Repository) CreateUser(ctx context.Context, user entity.User) error {
 	return nil
 }
 
+// CreateUser create new admin user
+func (s *Repository) UpdateUser(ctx context.Context, user entity.User) error {
+	query := `UPDATE users SET chat_id=? WHERE user_name=?`
+
+	if _, err := s.db.ExecContext(ctx, query, user.ChatID, user.UserName); err != nil {
+		return fmt.Errorf("can't create user: %w", err)
+	}
+	return nil
+}
+
 func (s *Repository) RemoveUser(ctx context.Context, id int) error {
 	query := `DELETE FROM users WHERE id = ?`
 
@@ -81,7 +91,12 @@ func (s *Repository) RemoveUser(ctx context.Context, id int) error {
 
 func (s *Repository) IsUserExists(ctx context.Context, userName string) (bool, error) {
 	query := `SELECT * FROM users WHERE user_name = ? LIMIT 1`
-	err := s.db.QueryRowContext(ctx, query, userName).Err()
+	var (
+		id     int
+		name   string
+		chatId int
+	)
+	err := s.db.QueryRowContext(ctx, query, userName).Scan(&id, &name, &chatId)
 	if err == sql.ErrNoRows {
 		return false, nil
 	}
