@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"promo-bot/config"
 	"promo-bot/internal/entity"
 	"promo-bot/internal/infrastructure/repository/sqlite"
 	"strconv"
@@ -27,9 +28,12 @@ func New(token string, repository *sqlite.Repository) (*TgBot, error) {
 	return &TgBot{Bot: bot, Repository: repository}, nil
 }
 
-func (b *TgBot) Start(timout int) error {
+func (b *TgBot) Start(config config.TG) error {
 	u := tgbotapi.NewUpdate(0)
-	u.Timeout = timout
+	u.Timeout = config.Timeout
+
+	b.Bot.Debug = config.Mode == "debug"
+	log.Printf("Authorized on account %s", b.Bot.Self.UserName)
 
 	updates := b.Bot.GetUpdatesChan(u)
 

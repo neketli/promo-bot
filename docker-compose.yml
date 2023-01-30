@@ -10,3 +10,10 @@ services:
       - "8080:8080"
     volumes:
       - .:/data
+  sqlite3:
+    image: nouchka/sqlite3:latest
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./data/sqlite:/root/db/
+      
