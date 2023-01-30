@@ -111,14 +111,14 @@ func (b *TgBot) adminControls(update tgbotapi.Update, updates tgbotapi.UpdatesCh
 	case HelpCommand:
 		b.SendMessageWithKeyboard(update.Message.Chat.ID, adminKeyboard, msgHelp)
 	case msgTriggerList:
-		b.getAllPosts(update)
+		b.sendAllPosts(update)
 	case msgTriggerCreate:
 		if err := b.enterPost(update, updates); err != nil {
 			b.SendError(update.Message.From.ID)
 			log.Printf("ERROR: can't create trigger, %s \n", err.Error())
 		}
 	case msgAdminList:
-		b.getAdminList(update)
+		b.sendAdminList(update)
 	case msgAdminCreate:
 		if err := b.createAdmin(update, updates); err != nil {
 			b.SendError(update.Message.From.ID)
@@ -236,7 +236,7 @@ func (b *TgBot) initAdmin(update tgbotapi.Update) error {
 
 }
 
-func (b *TgBot) getAdminList(update tgbotapi.Update) {
+func (b *TgBot) sendAdminList(update tgbotapi.Update) {
 	res, err := b.Repository.GetUsers(context.TODO())
 	if err != nil {
 		log.Print("ERROR: can't get posts: ", err)
@@ -280,7 +280,7 @@ func (b *TgBot) deleteAdmin(update tgbotapi.Update) error {
 	return nil
 }
 
-func (b *TgBot) getAllPosts(update tgbotapi.Update) {
+func (b *TgBot) sendAllPosts(update tgbotapi.Update) {
 	res, err := b.Repository.GetPosts(context.TODO())
 	if err != nil {
 		log.Print("ERROR: can't get posts: ", err)
