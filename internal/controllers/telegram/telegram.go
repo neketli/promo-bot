@@ -285,6 +285,12 @@ func (b *TgBot) sendAllPosts(update tgbotapi.Update) {
 	if err != nil {
 		log.Print("ERROR: can't get posts: ", err)
 	}
+
+	if len(res) == 0 {
+		b.SendMessage(update.Message.Chat.ID, msgEmpty)
+		return
+	}
+
 	for _, post := range res {
 		text := fmt.Sprintf("ID:%d [%s] - %s", post.ID, post.Trigger, post.Description)
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
