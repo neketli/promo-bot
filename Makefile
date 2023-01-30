@@ -12,6 +12,6 @@ docker-build:
 
 .PHONY: docker-run
 docker-run:
-	docker run --env-file .env promo-bot
+	docker run promo-bot
 
 .DEFAULT_GOAL := build

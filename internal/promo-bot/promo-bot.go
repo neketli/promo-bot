@@ -27,6 +27,8 @@ func Start(config *config.Config) {
 		log.Fatalf("FATAL: can't start bot, %s", err.Error())
 	}
 
+	bot.Bot.Debug = config.TG.Mode == "debug"
+
 	log.Printf("Authorized on account %s", bot.Bot.Self.UserName)
 
 }

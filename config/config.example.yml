@@ -9,3 +9,4 @@ http:
 telegram:
   token: "bot_token"
   timeout: 60
+  mode: "production"

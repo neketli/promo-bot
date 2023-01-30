@@ -23,7 +23,6 @@ func New(token string, repository *sqlite.Repository) (*TgBot, error) {
 	if err != nil {
 		return &TgBot{}, fmt.Errorf("error bot api connection: %w", err)
 	}
-	bot.Debug = true
 
 	return &TgBot{Bot: bot, Repository: repository}, nil
 }
@@ -42,10 +41,8 @@ func (b *TgBot) Start(timout int) error {
 			}
 
 			if isAdmin {
-				fmt.Print("DEBUG: message from admin ", update.Message.Chat.UserName)
 				b.adminControls(update, updates)
 			} else {
-				fmt.Print("DEBUG: message from user ", update.Message.Chat.UserName)
 				b.userControls(update, updates)
 			}
 		} else if update.CallbackQuery != nil {
