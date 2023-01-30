@@ -112,11 +112,17 @@ func (b *TgBot) adminControls(update tgbotapi.Update, updates tgbotapi.UpdatesCh
 	case msgTriggerList:
 		b.getAllPosts(update)
 	case msgTriggerCreate:
-		b.enterPost(update, updates)
+		if err := b.enterPost(update, updates); err != nil {
+			b.SendError(update.Message.From.ID)
+			log.Printf("ERROR: can't create trigger, %s \n", err.Error())
+		}
 	case msgAdminList:
 		b.getAdminList(update)
 	case msgAdminCreate:
-		b.createAdmin(update, updates)
+		if err := b.createAdmin(update, updates); err != nil {
+			b.SendError(update.Message.From.ID)
+			log.Printf("ERROR: can't create admin, %s \n", err.Error())
+		}
 	}
 }
 
@@ -352,12 +358,13 @@ func (b *TgBot) processMessageTriggers(update tgbotapi.Update) error {
 		b.SendError(update.Message.Chat.ID)
 		return err
 	}
-	msgText := strings.ToLower(update.Message.Text)
+	msgText := strings.ReplaceAll(strings.ToLower(update.Message.Text), " ", "")
 	descriptions := make([]string, 0)
 	for _, trigger := range triggers {
 		wg.Add(1)
 		go func(trigger string) {
-			if strings.Contains(msgText, strings.ToLower(trigger)) {
+			t := strings.ReplaceAll(strings.ToLower(trigger), " ", "")
+			if strings.Contains(msgText, t) {
 				posts, err := b.Repository.GetPostsByTrigger(context.TODO(), trigger)
 				if err != nil {
 					return
