@@ -8,10 +8,8 @@ install:
 
 .PHONY: docker-build
 docker-build:
-	docker build -t "promo-bot" .
+	docker compose build
+.PHONY: db-init
 
-.PHONY: docker-run
-docker-run:
-	docker run --env-file .env promo-bot
 
 .DEFAULT_GOAL := build

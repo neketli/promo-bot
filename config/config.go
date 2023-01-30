@@ -24,8 +24,9 @@ type (
 	}
 
 	TG struct {
-		TgToken string `env-required:"true" yaml:"token" env:"TG_TOKEN"`
-		TgHost  string `env-required:"true" yaml:"host"`
+		Token   string `env-required:"true" yaml:"token" env:"TG_TOKEN"`
+		Timeout int    `env-required:"true" yaml:"timeout"`
+		Mode    string `env-required:"true" yaml:"mode"`
 	}
 )
 

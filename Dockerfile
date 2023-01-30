@@ -7,9 +7,9 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 # Build
-COPY . ./
+COPY . .
 # CGO_ENABLED=0
-RUN go build -v ./cmd/promo-bot
+RUN go build -v ./cmd/promo-bot 
 
 # Create final image
 # FROM alpine
