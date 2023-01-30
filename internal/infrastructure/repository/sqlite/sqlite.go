@@ -159,21 +159,87 @@ func (s *Repository) GetPosts(ctx context.Context) ([]entity.Post, error) {
 	return posts, nil
 }
 
+func (s *Repository) GetPostsByTrigger(ctx context.Context, trigger string) ([]entity.Post, error) {
+	query := `SELECT * FROM promocodes WHERE trigger=?`
+	rows, err := s.db.QueryContext(ctx, query, trigger)
+	if err != nil {
+		return []entity.Post{}, fmt.Errorf("can't get posts: %w", err)
+	}
+	defer rows.Close()
+	posts := make([]entity.Post, 0)
+
+	for rows.Next() {
+		var (
+			id          int
+			trigger     string
+			description string
+		)
+		if err := rows.Scan(&id, &trigger, &description); err != nil {
+			return []entity.Post{}, fmt.Errorf("can't get posts: %w", err)
+		}
+		posts = append(posts, entity.Post{
+			ID:          id,
+			Trigger:     trigger,
+			Description: description,
+		})
+	}
+
+	rerr := rows.Close()
+	if rerr != nil {
+		return []entity.Post{}, fmt.Errorf("can't get posts: %w", err)
+	}
+
+	if err := rows.Err(); err != nil {
+		return []entity.Post{}, fmt.Errorf("can't get posts: %w", err)
+	}
+
+	return posts, nil
+}
+
 func (s *Repository) GetRandomPost(ctx context.Context) (entity.Post, error) {
-	query := `SELECT * FROM promocoders ORDER BY RAND() LIMIT 1`
-	var id int
-	var trigger string
-	var description string
+	query := `SELECT * FROM promocodes ORDER BY RANDOM() LIMIT 1`
+	var (
+		id          int
+		trigger     string
+		description string
+	)
 	err := s.db.QueryRowContext(ctx, query).Scan(&id, &trigger, &description)
 	if err == sql.ErrNoRows {
 		return entity.Post{}, nil
 	}
 	if err != nil {
-		return entity.Post{}, fmt.Errorf("can't get user: %w", err)
+		return entity.Post{}, fmt.Errorf("can't get promocode: %w", err)
 	}
 	return entity.Post{
 		ID:          id,
 		Trigger:     trigger,
 		Description: description,
 	}, nil
+}
+
+func (s *Repository) GetTriggerList(ctx context.Context) ([]string, error) {
+	query := `SELECT DISTINCT trigger FROM promocodes`
+	rows, err := s.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("can't get promocode: %w", err)
+	}
+	defer rows.Close()
+	triggers := make([]string, 0)
+
+	for rows.Next() {
+		var trigger string
+		if err := rows.Scan(&trigger); err != nil {
+			return nil, fmt.Errorf("can't get promocode: %w", err)
+		}
+		triggers = append(triggers, trigger)
+	}
+	rerr := rows.Close()
+	if rerr != nil {
+		return nil, fmt.Errorf("can't get promocode: %w", err)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("can't get promocode: %w", err)
+	}
+	return triggers, nil
 }

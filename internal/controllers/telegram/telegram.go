@@ -8,6 +8,7 @@ import (
 	"promo-bot/internal/infrastructure/repository/sqlite"
 	"strconv"
 	"strings"
+	"sync"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -41,10 +42,11 @@ func (b *TgBot) Start(timout int) error {
 			}
 
 			if isAdmin {
-				fmt.Print("DEBUG: message from ", update.Message.Chat.UserName)
+				fmt.Print("DEBUG: message from admin ", update.Message.Chat.UserName)
 				b.adminControls(update, updates)
 			} else {
-				// pass
+				fmt.Print("DEBUG: message from user ", update.Message.Chat.UserName)
+				b.userControls(update, updates)
 			}
 		} else if update.CallbackQuery != nil {
 			isAdmin, err := b.Repository.IsUserExists(context.TODO(), update.CallbackQuery.From.UserName)
@@ -59,7 +61,6 @@ func (b *TgBot) Start(timout int) error {
 					b.deleteAdmin(update)
 				}
 			}
-
 		}
 	}
 	return nil
@@ -102,9 +103,6 @@ func (b *TgBot) SendError(id int64) error {
 }
 
 func (b *TgBot) adminControls(update tgbotapi.Update, updates tgbotapi.UpdatesChannel) {
-	// msg := tgbotapi.NewMessage(update.Message.Chat.ID, "admin")
-	// msg.ReplyToMessageID = update.Message.MessageID
-
 	switch update.Message.Text {
 	case StartCommand:
 		b.initAdmin(update)
@@ -120,6 +118,20 @@ func (b *TgBot) adminControls(update tgbotapi.Update, updates tgbotapi.UpdatesCh
 	case msgAdminCreate:
 		b.createAdmin(update, updates)
 	}
+}
+
+func (b *TgBot) userControls(update tgbotapi.Update, updates tgbotapi.UpdatesChannel) error {
+	switch update.Message.Text {
+	case StartCommand:
+		b.SendMessageWithKeyboard(update.Message.Chat.ID, defaultKeyboard, msgHello)
+	case HelpCommand:
+		b.SendMessageWithKeyboard(update.Message.Chat.ID, defaultKeyboard, msgHelp)
+	case msgRandomPromo, RandomCommand:
+		b.sendRandomCode(update)
+	default:
+		b.processMessageTriggers(update)
+	}
+	return nil
 }
 
 func (b *TgBot) enterPost(update tgbotapi.Update, updates tgbotapi.UpdatesChannel) error {
@@ -304,6 +316,78 @@ func (b *TgBot) sendMessageToDelited(chatId int64, fromUser string) error {
 	msg.ReplyMarkup = defaultKeyboard
 	if _, err := b.Bot.Send(msg); err != nil {
 		return fmt.Errorf("failed sending message: %w", err)
+	}
+	return nil
+}
+
+func (b *TgBot) getRandomPromo() (string, error) {
+	post, err := b.Repository.GetRandomPost(context.TODO())
+	if err != nil {
+		return msgError, fmt.Errorf("can't get random post: %w", err)
+	}
+	text := msgFindPromo + post.Description
+	return text, nil
+
+}
+
+func (b *TgBot) sendRandomCode(update tgbotapi.Update) error {
+	text, err := b.getRandomPromo()
+	if err != nil {
+		b.SendError(update.Message.Chat.ID)
+		return err
+	}
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
+	msg.ReplyToMessageID = update.Message.MessageID
+	if _, err := b.Bot.Send(msg); err != nil {
+		return fmt.Errorf("can't send message: %w", err)
+	}
+	return nil
+}
+
+func (b *TgBot) processMessageTriggers(update tgbotapi.Update) error {
+	var mutex sync.Mutex
+	var wg sync.WaitGroup
+	triggers, err := b.Repository.GetTriggerList(context.TODO())
+	if err != nil {
+		b.SendError(update.Message.Chat.ID)
+		return err
+	}
+	msgText := strings.ToLower(update.Message.Text)
+	descriptions := make([]string, 0)
+	for _, trigger := range triggers {
+		wg.Add(1)
+		go func(trigger string) {
+			if strings.Contains(msgText, strings.ToLower(trigger)) {
+				posts, err := b.Repository.GetPostsByTrigger(context.TODO(), trigger)
+				if err != nil {
+					return
+				}
+				for _, post := range posts {
+					mutex.Lock()
+					descriptions = append(descriptions, post.Description)
+					mutex.Unlock()
+				}
+			}
+			wg.Done()
+		}(trigger)
+	}
+
+	wg.Wait()
+
+	if len(descriptions) == 0 {
+		return nil
+	}
+
+	text := msgFindPromo
+
+	for _, description := range descriptions {
+		text = text + description + "\n"
+	}
+
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
+	msg.ReplyToMessageID = update.Message.MessageID
+	if _, err := b.Bot.Send(msg); err != nil {
+		return fmt.Errorf("can't send message: %w", err)
 	}
 	return nil
 }

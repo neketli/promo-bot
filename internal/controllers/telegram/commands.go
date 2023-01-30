@@ -7,11 +7,15 @@ const (
 	HelpCommand        = "/help"
 	DeletePostCommand  = "/delete-post"
 	DeleteAdminCommand = "/delete-admin"
+	RandomCommand      = "/random-promo"
 )
 
 var defaultKeyboard = tgbotapi.NewReplyKeyboard(
 	tgbotapi.NewKeyboardButtonRow(
 		tgbotapi.NewKeyboardButton(HelpCommand),
+	),
+	tgbotapi.NewKeyboardButtonRow(
+		tgbotapi.NewKeyboardButton(RandomCommand),
 	),
 )
 
