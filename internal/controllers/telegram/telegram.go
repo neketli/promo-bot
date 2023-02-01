@@ -6,7 +6,7 @@ import (
 	"log"
 	"promo-bot/config"
 	"promo-bot/internal/entity"
-	"promo-bot/internal/infrastructure/repository/sqlite"
+	"promo-bot/internal/infrastructure/repository/postgres"
 	"strconv"
 	"strings"
 	"sync"
@@ -16,10 +16,10 @@ import (
 
 type TgBot struct {
 	Bot        *tgbotapi.BotAPI
-	Repository *sqlite.Repository
+	Repository *postgres.Repository
 }
 
-func New(token string, repository *sqlite.Repository) (*TgBot, error) {
+func New(token string, repository *postgres.Repository) (*TgBot, error) {
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		return &TgBot{}, fmt.Errorf("error bot api connection: %w", err)

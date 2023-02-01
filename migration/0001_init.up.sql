@@ -1,11 +1,11 @@
 CREATE TABLE IF NOT EXISTS promocodes (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			trigger TEXT,
+			id SERIAL PRIMARY KEY,
+			trigger character varying(100),
 			description TEXT
 		);
 
 CREATE TABLE IF NOT EXISTS users (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			user_name TEXT,
+			id SERIAL PRIMARY KEY,
+			user_name character varying(100),
 			chat_id INTEGER
 		);
