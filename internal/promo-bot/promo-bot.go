@@ -4,7 +4,7 @@ import (
 	"log"
 	"promo-bot/config"
 	"promo-bot/internal/controllers/telegram"
-	"promo-bot/internal/infrastructure/repository/sqlite"
+	"promo-bot/internal/infrastructure/repository/postgres"
 )
 
 const (
@@ -12,7 +12,7 @@ const (
 )
 
 func Start(config *config.Config) {
-	repository, err := sqlite.New(storagePath)
+	repository, err := postgres.New(config.DB.Connection)
 	if err != nil {
 		log.Fatal("Service can't connect db: ", err)
 	}

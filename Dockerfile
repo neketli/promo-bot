@@ -8,12 +8,7 @@ RUN go mod download
 
 # Build
 COPY . .
-# CGO_ENABLED=0
 RUN go build -v ./cmd/promo-bot 
 
-# Create final image
-# FROM alpine
-# WORKDIR /
-# COPY --from=builder /promo-bot . err
 EXPOSE 8080
 CMD ["./promo-bot"]

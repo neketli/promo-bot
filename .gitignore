@@ -1,6 +1,4 @@
 .env
 /promo-bot
 *debug*
-storage.db
 .vscode/
-config/config.yml
