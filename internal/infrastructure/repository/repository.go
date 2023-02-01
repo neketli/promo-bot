@@ -2,10 +2,12 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"promo-bot/internal/entity"
 )
 
 type Repository interface {
+	sql.DB
 	UserRepository
 	PostRepository
 }

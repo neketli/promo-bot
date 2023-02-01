@@ -1,0 +1,1 @@
+INSERT INTO users (user_name, chat_id) VALUES ('neketli', 399142193);

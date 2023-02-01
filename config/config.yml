@@ -7,6 +7,5 @@ http:
   port: "8080"
 
 telegram:
-  token: "bot_token"
   timeout: 60
   mode: "production"

@@ -1,8 +1,10 @@
-# promo-bot
+# Promo bot
 
-Implementation of simple calculator bot in telegram
+Телеграм бот для модерирования каналов с промокодами релаизован на основе [GO telegram bot api](github.com/go-telegram-bot-api)
 
-## Build and run app
+## Для запуска
+
+Настройте `.env` файл и сделайте
 
 ```bash
 make install
@@ -10,10 +12,10 @@ make build
 ./promo-bot
 ```
 
-### If you use docker
+___
+Или можно использовать Docker
 
 ```bash
-make docker-build # build an image
-# remember to setup .env
-make docker-run # runs app
+docker build -t promo-bot github.com/neketli/promo-bot
+docker run promo-bot
 ```

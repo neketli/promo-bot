@@ -11,6 +11,7 @@ type (
 		App  `yaml:"app"`
 		HTTP `yaml:"http"`
 		TG   `yaml:"telegram"`
+		DB
 	}
 
 	App struct {
@@ -24,9 +25,13 @@ type (
 	}
 
 	TG struct {
-		Token   string `env-required:"true" yaml:"token" env:"TG_TOKEN"`
+		Token   string `env-required:"true" env:"TG_TOKEN"`
 		Timeout int    `env-required:"true" yaml:"timeout"`
 		Mode    string `env-required:"true" yaml:"mode"`
+	}
+
+	DB struct {
+		Connection string `env-required:"true" env:"DB_CONNECTION"`
 	}
 )
 
