@@ -41,6 +41,6 @@ jobs:
           script: |
             docker login ghcr.io -u $GITHUB_USERNAME -p $GITHUB_TOKEN
             docker pull ghcr.io/neketli/promo-bot/promo-bot:latest
-            docker stop containername
+            docker stop promo_bot
             docker system prune -f
-            docker run -e TG_TOKEN=$TG_TOKEN -e DB_CONNECTION=$DB_CONNECTION --name containername -dit -p 8080:8080 ghcr.io/neketli/promo-bot/promo-bot:latest
+            docker run -e TG_TOKEN=$TG_TOKEN -e DB_CONNECTION=$DB_CONNECTION --name promo_bot -dit -p 8080:8080 ghcr.io/neketli/promo-bot/promo-bot:latest
