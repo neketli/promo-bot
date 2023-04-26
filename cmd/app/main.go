@@ -7,10 +7,8 @@ import (
 	promobot "promo-bot/internal/promo-bot"
 )
 
-const configPath = "./config/config.yml"
-
 func main() {
-	config, err := config.New(configPath)
+	config, err := config.New()
 	if err != nil {
 		log.Fatal("Can't setup config: ", err)
 	}

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"flag"
 	"fmt"
 
 	"github.com/ilyakaznacheev/cleanenv"
@@ -35,8 +36,12 @@ type (
 	}
 )
 
-func New(path string) (*Config, error) {
+func New() (*Config, error) {
 	cfg := &Config{}
+
+	var path string
+	flag.StringVar(&path, "config", "./config/config.yml", "Path to config")
+	flag.Parse()
 
 	err := cleanenv.ReadConfig(path, cfg)
 	if err != nil {

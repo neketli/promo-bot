@@ -7,10 +7,6 @@ import (
 	"promo-bot/internal/infrastructure/repository/postgres"
 )
 
-const (
-	storagePath = "./data/sqlite/storage.db"
-)
-
 func Start(config *config.Config) {
 	repository, err := postgres.New(config.DB.Connection)
 	if err != nil {
