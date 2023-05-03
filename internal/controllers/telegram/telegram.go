@@ -39,7 +39,6 @@ func (b *TgBot) Start(config config.TG) error {
 
 	for update := range updates {
 		if update.Message != nil {
-			log.Print("", update.Message.From.ID, update.Message.From.UserName)
 			isAdmin, err := b.Repository.IsUserExists(context.TODO(), update.Message.Chat.UserName)
 			if err != nil {
 				log.Print("ERROR: can't check admin: ", err)
